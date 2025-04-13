@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthAdmin
@@ -19,16 +20,20 @@ class AuthAdmin
 
         if(Auth::check())
         {
-            if(Auth::user()->utype=='ADM')
+            if(Auth::user()->utype==='ADM')
             {
                 return $next($request);
             }
             else
             {
                 session::flush();
-                return redirect('/')->with('status','Access Denied');
+                return redirect()->route('login');
             }
         }
-        return $next($request);
+        else
+        {
+            return redirect()->route('login');
+        }
+
     }
 }
