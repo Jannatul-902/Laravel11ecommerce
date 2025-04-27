@@ -145,7 +145,7 @@ class AdminController extends Controller
 
     public function category_edit($id)
     {
-        $category=Category::find($id);
+        $category = Category::find($id);
         return view('admin.category-edit', compact('category'));
     }
 
@@ -176,9 +176,8 @@ class AdminController extends Controller
 
     public function category_delete($id)
     {
-        $category=Category::find($id);
-        if (File::exists(public_path('uploads/categories') . '/' . $category->image))
-        {
+        $category = Category::find($id);
+        if (File::exists(public_path('uploads/categories') . '/' . $category->image)) {
             File::delete(public_path('uploads/categories') . '/' . $category->image);
         }
         $category->delete();
@@ -193,7 +192,7 @@ class AdminController extends Controller
 
     public function product_add()
     {
-        $categories = Category::select('id','name')->orderBy('name')->get();
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
         $brands = Brand::select('id', 'name')->orderBy('name')->get();
         return view('admin.product-add', compact('categories', 'brands'));
     }
@@ -201,19 +200,19 @@ class AdminController extends Controller
     public function product_store(Request $request)
     {
         $request->validate([
-            'name'=>'required',
-            'slug'=>'required|unique:products, slug',
-            'short_description'=>'required',
-            'description'=>'required',
-            'regular_price'=>'required',
-            'sale_price'=>'required',
-            'sku'=>'required',
-            'stock_status'=>'required',
-            'featured'=>'required',
-            'quantity'=>'required',
-            'image'=>'required|mimes:png,jpg,jpeg|max:2048',
-            'category_id'=>'required',
-            'brand_id'=>'required',
+            'name' => 'required',
+            'slug' => 'required|unique:products, slug',
+            'short_description' => 'required',
+            'description' => 'required',
+            'regular_price' => 'required',
+            'sale_price' => 'required',
+            'sku' => 'required',
+            'stock_status' => 'required',
+            'featured' => 'required',
+            'quantity' => 'required',
+            'image' => 'required|mimes:png,jpg,jpeg|max:2048',
+            'category_id' => 'required',
+            'brand_id' => 'required',
         ]);
 
         $product = new product();
@@ -227,14 +226,13 @@ class AdminController extends Controller
         $product->stock_status = $request->tock_status;
         $product->featured = $request->featured;
         $product->quantity = $request->quantity;
-        $product->category_id = $request->category_id ;
+        $product->category_id = $request->category_id;
         $product->brand_id = $request->brand_id;
 
 
         $current_timestamp = Carbon::now()->timestamp;
 
-        if($request->hasFile('image'))
-        {
+        if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = $current_timestamp . '.' . $image->extension();
             $this->GenerateProductThumbnailImage($image, $imageName);
@@ -246,16 +244,13 @@ class AdminController extends Controller
         $gallery_images = "";
         $counter = 1;
 
-        if($request->hasFile('images'))
-        {
+        if ($request->hasFile('images')) {
             $allowedfileExtension = ['png', 'jpg', 'jpeg'];
-            $files= $request->file('images');
-            foreach($files as $file)
-            {
+            $files = $request->file('images');
+            foreach ($files as $file) {
                 $gextension = $file->getClientOriginalExtension();
                 $gcheck = in_array($gextension, $allowedfileExtension);
-                if($gcheck)
-                {
+                if ($gcheck) {
                     $gfileName = $current_timestamp . $counter . '.' . $file->extension();
                     $this->GenerateProductThumbnailImage($file, $gfileName);
                     array_push($gallery_arr, $gfileName);
@@ -284,9 +279,146 @@ class AdminController extends Controller
 
         $img->resize(540, 689, function ($constraint) {
             $constraint->aspectRatio();
-        })->save($destinationPathThumbnail. '/' . $imageName);
+        })->save($destinationPathThumbnail . '/' . $imageName);
 
 
     }
+
+
+    public function contacts()
+    {
+        $contacts = Contact::orderBy('id', 'DESC')->paginate(10);
+        return view('admin.contacts', compact('contacts'));
+    }
+
+    public function contact_delete($id)
+    {
+        $contact = Contact::find($id);
+        $contact->delete();
+        return redirect()->route('admin.contacts')->with('status', 'Contact has been deleted successfully');
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        $results = product::where('name', 'LIKE', "%{$query}%")->get()->take(8);
+        return response()->json($results);
+    }
+
+    public function product_edit($id)
+    {
+        $product = product::find($id);
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
+        $brands = Brand::select('id', 'name')->orderBy('name')->get();
+        return view('admin.product-edit', compact('product', 'categories', 'brands'));
+    }
+
+    public function product_update(Request $request)
+    {
+        $request->validate([
+            'name' => 'required',
+            'slug' => 'required|unique:products, slug,' . $request->id,
+            'short_description' => 'required',
+            'description' => 'required',
+            'regular_price' => 'required',
+            'sale_price' => 'required',
+            'sku' => 'required',
+            'stock_status' => 'required',
+            'featured' => 'required',
+            'quantity' => 'required',
+            'image' => 'mimes:png,jpg,jpeg|max:2048',
+            'category_id' => 'required',
+            'brand_id' => 'required'
+        ]);
+
+        $product = product::find($request->id);
+        $product->name = $request->name;
+        $product->slug = Str::slug($request->name);
+        $product->short_description = $request->short_description;
+        $product->description = $request->description;
+        $product->regular_price = $request->regular_price;
+        $product->sale_price = $request->sale_price;
+        $product->sku = $request->sku;
+        $product->stock_status = $request->tock_status;
+        $product->featured = $request->featured;
+        $product->quantity = $request->quantity;
+        $product->category_id = $request->category_id;
+        $product->brand_id = $request->brand_id;
+
+        $current_timestamp = Carbon::now()->timestamp;
+
+        if ($request->hasFile('image')) {
+            if (File::exists(public_path('uploads/products') . '/' . $product->image)) {
+                File::delete(public_path('uploads/products') . '/' . $product->image);
+            }
+            if (File::exists(public_path('uploads/products/thumbnails') . '/' . $product->image)) {
+                File::delete(public_path('uploads/products/thumbnails') . '/' . $product->image);
+            }
+            $image = $request->file('image');
+            $imageName = $current_timestamp . '.' . $image->extension();
+            $this->GenerateProductThumbnailImage($image, $imageName);
+            $product->image = $imageName;
+
+        }
+
+        $gallery_arr = array();
+        $gallery_images = "";
+        $counter = 1;
+
+        if ($request->hasFile('images') )
+        {
+            foreach(explode(',', $product->images) as $ofile)
+            {
+                if (File::exists(public_path('uploads/products') . '/' . $ofile))
+                {
+                    File::delete(public_path('uploads/products') . '/' . $ofile);
+                }
+                if (File::exists(public_path('uploads/products/thumbnails') . '/' . $ofile))
+                {
+                    File::delete(public_path('uploads/products/thumbnails') . '/' . $ofile);
+                }
+            }
+
+        }
+
+        if ($request->hasFile('images')) {
+            $allowedfileExtension = ['png', 'jpg', 'jpeg'];
+            $files = $request->file('images');
+            foreach ($files as $file)
+            {
+                $gextension = $file->getClientOriginalExtension();
+                $gcheck = in_array($gextension, $allowedfileExtension);
+                if ($gcheck) {
+                    $gfileName = $current_timestamp . $counter . '.' . $file->extension();
+                    $this->GenerateProductThumbnailImage($file, $gfileName);
+                    array_push($gallery_arr, $gfileName);
+                    $counter = $counter + 1;
+                }
+
+                $gallery_images = implode(',', $gallery_arr);
+
+
+
+                $product->images = $gallery_images;
+                $product->save();
+                return redirect()->route('admin.products')->with('status', 'Product has been updated successfully');
+            }
+
+        }
+    }
+    public function product_delete($id)
+    {
+        $product = product::find($id);
+        if (File::exists(public_path('uploads/products') . '/' . $product->image)) {
+            File::delete(public_path('uploads/products') . '/' . $product->image);
+        }
+        if (File::exists(public_path('uploads/products/thumbnails') . '/' . $product->image)) {
+            File::delete(public_path('uploads/products/thumbnails') . '/' . $product->image);
+        }
+        $product->delete();
+        return redirect()->route('admin.products')->with('status', 'Product has been deleted successfully');
+
+    }
+
 
 }

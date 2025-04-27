@@ -33,4 +33,13 @@ Route::middleware(['auth', AuthAdmin::class])->group(function () {
     Route::delete('/admin/category/{id}/delete', [AdminController::class, 'category_delete'])->name('admin.category.delete');
     Route::get('/admin/products', [AdminController::class, 'products'])->name('admin.products');
     Route::get('/admin/product/add', [AdminController::class, 'product_add'])->name('admin.product.add');
+    Route::post('/admin/product/store', [AdminController::class, 'product_store'])->name('admin.product.store');
+    Route::get('/admin/product/{id}/edit', [AdminController::class, 'product_edit'])->name('admin.product.edit');
+    Route::put('/admin/product/update', [AdminController::class, 'product_update'])->name('admin.product.update');
+
+    Route::get('/contact-us', [HomeController::class, 'contact'])->name('home.contact');
+    Route::post('/contact-us/store', [HomeController::class, 'contact_store'])->name('home.contact.store');
+
+
+    Route::get('/serch', [HomeController::class, 'search'])->name('search');
 });
