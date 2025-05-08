@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\product;
+use App\Models\Slide;
+use App\Models\Slider;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -365,16 +368,12 @@ class AdminController extends Controller
         $gallery_images = "";
         $counter = 1;
 
-        if ($request->hasFile('images') )
-        {
-            foreach(explode(',', $product->images) as $ofile)
-            {
-                if (File::exists(public_path('uploads/products') . '/' . $ofile))
-                {
+        if ($request->hasFile('images')) {
+            foreach (explode(',', $product->images) as $ofile) {
+                if (File::exists(public_path('uploads/products') . '/' . $ofile)) {
                     File::delete(public_path('uploads/products') . '/' . $ofile);
                 }
-                if (File::exists(public_path('uploads/products/thumbnails') . '/' . $ofile))
-                {
+                if (File::exists(public_path('uploads/products/thumbnails') . '/' . $ofile)) {
                     File::delete(public_path('uploads/products/thumbnails') . '/' . $ofile);
                 }
             }
@@ -384,8 +383,7 @@ class AdminController extends Controller
         if ($request->hasFile('images')) {
             $allowedfileExtension = ['png', 'jpg', 'jpeg'];
             $files = $request->file('images');
-            foreach ($files as $file)
-            {
+            foreach ($files as $file) {
                 $gextension = $file->getClientOriginalExtension();
                 $gcheck = in_array($gextension, $allowedfileExtension);
                 if ($gcheck) {
@@ -415,9 +413,116 @@ class AdminController extends Controller
         if (File::exists(public_path('uploads/products/thumbnails') . '/' . $product->image)) {
             File::delete(public_path('uploads/products/thumbnails') . '/' . $product->image);
         }
+
+        foreach (explode(',', $product->images) as $ofile) {
+            if (File::exists(public_path('uploads/products') . '/' . $ofile)) {
+                File::delete(public_path('uploads/products') . '/' . $ofile);
+            }
+            if (File::exists(public_path('uploads/products/thumbnails') . '/' . $ofile)) {
+                File::delete(public_path('uploads/products/thumbnails') . '/' . $ofile);
+            }
+        }
         $product->delete();
         return redirect()->route('admin.products')->with('status', 'Product has been deleted successfully');
 
+    }
+
+    public function coupons()
+    {
+        $coupons = Coupon::orderBy('expiry_date', 'DESC')->paginate(12);
+        return view('admin.coupons', compact('coupons'));
+    }
+
+    public function coupon_add()
+    {
+        return view('admin.coupon-add');
+    }
+
+    public function coupon_store(Request $request)
+    {
+        $request->validate([
+            'code' => 'required',
+            'type' => 'required',
+            'value' => 'required|numeric',
+            'cart_value' => 'required|numeric',
+            'expiry_date' => 'required|date',
+        ]);
+
+        $coupon = new Coupon();
+        $coupon->code = $request->code;
+        $coupon->type = $request->type;
+        $coupon->value = $request->value;
+        $coupon->cart_value = $request->cart_value;
+
+        $coupon->expiry_date = $request->expiry_date;
+        $coupon->save();
+        return redirect()->route('admin.coupons')->with('status', 'Coupon has been added successfully');
+    }
+
+    public function slides()
+    {
+        $slides = Slide::orderBy('id', 'DESC')->paginate(10);
+        return view('admin.slides', compact('slides'));
+    }
+
+    public function slide_add()
+    {
+        return view('admin.slide-add');
+    }
+
+    public function slide_store(Request $request)
+    {
+        $request->validate([
+            'tagline' => 'required',
+            'title' => 'required',
+            'subtitle' => 'required',
+            'link' => 'required',
+            'status' => 'required',
+            'image' => 'required|mimes:png,jpg,jpeg|max:2048',
+        ]);
+
+        $slide = new Slide();
+        $slide->tagline = $request->tagline;
+        $slide->title = $request->title;
+        $slide->subtitle = $request->subtitle;
+        $slide->link = $request->link;
+        $slide->status = $request->status;
+        $image = $request->file('image');
+        $file_extension = $request->file('image')->extension();
+        $file_name = Carbon::now()->timestamp . '.' . $file_extension;
+        $this->GenerateSlideThumbnailsImage($image, $file_name);
+        $slide->image = $file_name;
+        $slide->save();
+        return redirect()->route('admin.slides')->with('status', 'Slide has been added successfully');
+    }
+
+    // public function GenerateSlideThumbnailsImage($image, $imageName)
+    // {
+    //     $destinationPath = public_path('uploads/slides');
+    //     $img = Image::read($image->path());
+    //     $img->cover(400, 690, "top");
+    //     $img->resize(400, 690,
+    //     function ($constraint) {
+    //         $constraint->aspectRatio();
+    //     })->save($destinationPath . '/' . $imageName);
+    // }
+
+    public function GenerateSlideThumbnailsImage($image, $imageName)
+    {
+        $destinationPath = public_path('uploads/slides');
+        $img = Image::read($image->path());
+
+        // ইমেজকে ঠিকঠাক crop করা
+        $img->cover(400, 690, 'top');
+
+        // এরপর save করা
+        $img->save($destinationPath . '/' . $imageName);
+    }
+
+    public function slide_edit($id)
+    {
+        $slide = Slide::find($id);
+        return view('admin.slide-edit', compact('slide'));
     }
 
 

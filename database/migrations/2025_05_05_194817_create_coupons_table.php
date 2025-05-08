@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('contacts', function (Blueprint $table) {
+        Schema::create('coupons', function (Blueprint $table) {
             $table->id();
-            $table->string(column: 'name');
-            $table->string(column: 'email');
-            $table->string(column: 'phone');
-            $table->text(column: 'comment');
-
+            $table->string('code')->unique();
+            $table->enum('type', ['fixed', 'percent']);
+            $table->decimal('value');
+            $table->decimal('cart_value');
+            $table->date('expiry_date')->default(DB::raw("(DATE(CURRENT_TIMESTAMP) )"));
 
             $table->timestamps();
         });
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('contacts');
+        Schema::dropIfExists('coupons');
     }
 };
